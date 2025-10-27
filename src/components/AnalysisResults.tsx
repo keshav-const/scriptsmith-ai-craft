@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import SyntaxHighlighter from 'react-syntax-highlighter';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react';
 
