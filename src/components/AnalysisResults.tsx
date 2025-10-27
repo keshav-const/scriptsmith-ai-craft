@@ -1,0 +1,135 @@
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react';
+
+interface AnalysisData {
+  explanation: string;
+  lineByLine?: Array<{
+    line: number;
+    content: string;
+    explanation: string;
+  }>;
+  issues?: Array<{
+    severity: 'high' | 'medium' | 'low';
+    line?: number;
+    description: string;
+    suggestion: string;
+  }>;
+  improvements?: Array<{
+    title: string;
+    description: string;
+    code?: string;
+  }>;
+}
+
+interface AnalysisResultsProps {
+  analysis: AnalysisData;
+  language: string;
+}
+
+const severityColors = {
+  high: 'destructive',
+  medium: 'default',
+  low: 'secondary',
+} as const;
+
+export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) => {
+  return (
+    <div className="space-y-6">
+      {/* Overall Explanation */}
+      <Card className="p-6">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-success" />
+          <div>
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Code Overview</h3>
+            <p className="text-muted-foreground leading-relaxed">{analysis.explanation}</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Line by Line Analysis */}
+      {analysis.lineByLine && analysis.lineByLine.length > 0 && (
+        <Card className="p-6">
+          <h3 className="mb-4 text-lg font-semibold text-foreground">Line-by-Line Breakdown</h3>
+          <div className="space-y-4">
+            {analysis.lineByLine.map((item, idx) => (
+              <div key={idx} className="border-l-2 border-muted pl-4">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground">Line {item.line}</span>
+                  <code className="rounded bg-muted px-2 py-0.5 text-xs font-mono text-foreground">
+                    {item.content}
+                  </code>
+                </div>
+                <p className="text-sm text-muted-foreground">{item.explanation}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Issues */}
+      {analysis.issues && analysis.issues.length > 0 && (
+        <Card className="p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <h3 className="text-lg font-semibold text-foreground">Issues & Code Smells</h3>
+          </div>
+          <div className="space-y-4">
+            {analysis.issues.map((issue, idx) => (
+              <div key={idx} className="rounded-lg border border-border bg-muted/50 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Badge variant={severityColors[issue.severity]}>
+                    {issue.severity.toUpperCase()}
+                  </Badge>
+                  {issue.line && (
+                    <span className="text-xs text-muted-foreground">Line {issue.line}</span>
+                  )}
+                </div>
+                <p className="mb-2 text-sm font-medium text-foreground">{issue.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Suggestion:</span> {issue.suggestion}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Improvements */}
+      {analysis.improvements && analysis.improvements.length > 0 && (
+        <Card className="p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-accent" />
+            <h3 className="text-lg font-semibold text-foreground">Suggested Improvements</h3>
+          </div>
+          <div className="space-y-6">
+            {analysis.improvements.map((improvement, idx) => (
+              <div key={idx}>
+                <h4 className="mb-2 font-medium text-foreground">{improvement.title}</h4>
+                <p className="mb-3 text-sm text-muted-foreground">{improvement.description}</p>
+                {improvement.code && (
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    <SyntaxHighlighter
+                      language={language}
+                      style={vscDarkPlus}
+                      customStyle={{
+                        margin: 0,
+                        padding: '1rem',
+                        fontSize: '0.875rem',
+                        background: 'hsl(var(--card))',
+                      }}
+                    >
+                      {improvement.code}
+                    </SyntaxHighlighter>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
