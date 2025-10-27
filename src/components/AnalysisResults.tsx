@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react';
 
 interface AnalysisData {
@@ -113,7 +113,7 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
                   <div className="overflow-hidden rounded-lg border border-border">
                     <SyntaxHighlighter
                       language={language}
-                      style={vscDarkPlus}
+                      style={atomOneDark}
                       customStyle={{
                         margin: 0,
                         padding: '1rem',
