@@ -39,29 +39,44 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert code reviewer and educator. Analyze code and provide:
-1. A clear line-by-line explanation
-2. Identification of code smells and bad practices
-3. Specific suggestions for improvement
-4. Best practice recommendations
-
-Return your analysis as a JSON object with this structure:
+            content: `You are an expert code analyzer. Analyze code and provide comprehensive feedback including quality metrics, docstrings, and improvement suggestions.
+            
+Return the analysis in this exact JSON structure:
 {
   "explanation": "Overall explanation of what the code does",
+  "docstring": "Generated docstring or inline comments for the code",
+  "rating": {
+    "complexity": "low|medium|high",
+    "readability": "low|medium|high",
+    "maintainability": 7
+  },
   "lineByLine": [
-    {"line": 1, "content": "actual code line", "explanation": "what this line does"}
+    {
+      "line": 1,
+      "content": "the actual line of code",
+      "explanation": "what this line does"
+    }
   ],
   "issues": [
-    {"severity": "high|medium|low", "line": 5, "description": "issue description", "suggestion": "how to fix"}
+    {
+      "severity": "high|medium|low",
+      "line": 5,
+      "description": "description of the issue",
+      "suggestion": "how to fix it"
+    }
   ],
   "improvements": [
-    {"title": "improvement title", "description": "detailed explanation", "code": "improved code snippet"}
+    {
+      "title": "improvement title",
+      "description": "detailed description",
+      "code": "suggested improved code"
+    }
   ]
 }`
           },
           {
             role: 'user',
-            content: `Analyze this ${language || 'code'}:\n\n${code}`
+            content: `Analyze this ${language || 'code'} in detail. Include quality metrics (complexity, readability, maintainability score 1-10), generate appropriate docstrings/comments, identify issues, and suggest improvements:\n\n${code}`
           }
         ],
       }),
@@ -129,6 +144,8 @@ Return your analysis as a JSON object with this structure:
         code_text: code,
         language: language || 'unknown',
         ai_explanation: analysis,
+        ai_docstring: analysis.docstring || null,
+        ai_rating: analysis.rating || null,
       })
       .select()
       .single();

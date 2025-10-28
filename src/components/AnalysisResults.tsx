@@ -1,11 +1,27 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { RatingMeter } from './RatingMeter';
+import { DocstringGenerator } from './DocstringGenerator';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface AnalysisData {
   explanation: string;
+  docstring?: string;
+  rating?: {
+    complexity?: 'low' | 'medium' | 'high';
+    readability?: 'low' | 'medium' | 'high';
+    maintainability?: number;
+  };
   lineByLine?: Array<{
     line: number;
     content: string;
@@ -36,18 +52,39 @@ const severityColors = {
 } as const;
 
 export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) => {
+  const { toast } = useToast();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copied to clipboard',
+      description: 'Code has been copied successfully',
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Overall Explanation */}
       <Card className="p-6">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-success" />
-          <div>
+          <div className="flex-1">
             <h3 className="mb-2 text-lg font-semibold text-foreground">Code Overview</h3>
             <p className="text-muted-foreground leading-relaxed">{analysis.explanation}</p>
           </div>
         </div>
       </Card>
+
+      {/* Quality Metrics */}
+      {analysis.rating && <RatingMeter rating={analysis.rating} />}
+
+      {/* Generated Docstrings */}
+      {analysis.docstring && <DocstringGenerator docstring={analysis.docstring} />}
 
       {/* Line by Line Analysis */}
       {analysis.lineByLine && analysis.lineByLine.length > 0 && (
@@ -110,20 +147,48 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
                 <h4 className="mb-2 font-medium text-foreground">{improvement.title}</h4>
                 <p className="mb-3 text-sm text-muted-foreground">{improvement.description}</p>
                 {improvement.code && (
-                  <div className="overflow-hidden rounded-lg border border-border">
-                    <SyntaxHighlighter
-                      language={language}
-                      style={atomOneDark}
-                      customStyle={{
-                        margin: 0,
-                        padding: '1rem',
-                        fontSize: '0.875rem',
-                        background: 'hsl(var(--card))',
-                      }}
-                    >
-                      {improvement.code}
-                    </SyntaxHighlighter>
-                  </div>
+                  <Collapsible
+                    open={openSections[`improvement-${idx}`]}
+                    onOpenChange={() => toggleSection(`improvement-${idx}`)}
+                  >
+                    <div className="rounded-lg border border-border">
+                      <CollapsibleTrigger asChild>
+                        <button className="flex w-full items-center justify-between bg-muted/50 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+                          <span>Show Suggested Fix</span>
+                          {openSections[`improvement-${idx}`] ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-2 z-10"
+                            onClick={() => copyToClipboard(improvement.code || '')}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <SyntaxHighlighter
+                            language={language}
+                            style={atomOneDark}
+                            customStyle={{
+                              margin: 0,
+                              padding: '1rem',
+                              paddingTop: '2.5rem',
+                              fontSize: '0.875rem',
+                              background: 'hsl(var(--card))',
+                            }}
+                          >
+                            {improvement.code}
+                          </SyntaxHighlighter>
+                        </div>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
                 )}
               </div>
             ))}

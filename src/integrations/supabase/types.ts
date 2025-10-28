@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       code_analyses: {
         Row: {
+          ai_docstring: string | null
           ai_explanation: Json
+          ai_rating: Json | null
           code_text: string
           created_at: string
           id: string
@@ -24,7 +26,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ai_docstring?: string | null
           ai_explanation: Json
+          ai_rating?: Json | null
           code_text: string
           created_at?: string
           id?: string
@@ -32,7 +36,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ai_docstring?: string | null
           ai_explanation?: Json
+          ai_rating?: Json | null
           code_text?: string
           created_at?: string
           id?: string
