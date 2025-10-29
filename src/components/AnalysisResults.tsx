@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ExportButtons } from '@/components/ExportButtons';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } from 'lucide-react';
@@ -69,6 +70,16 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
 
   return (
     <div className="space-y-6">
+      {/* Export Buttons */}
+      <Card className="p-6">
+        <h3 className="mb-3 text-lg font-semibold text-foreground">Export Options</h3>
+        <ExportButtons 
+          analysis={analysis} 
+          docstring={analysis.docstring} 
+          language={language} 
+        />
+      </Card>
+
       {/* Overall Explanation */}
       <Card className="p-6">
         <div className="flex items-start gap-3">

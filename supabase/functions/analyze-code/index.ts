@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { code, language } = await req.json();
+    const { code, language, userId } = await req.json();
     
     if (!code) {
       return new Response(
@@ -143,6 +143,7 @@ Return the analysis in this exact JSON structure:
       .insert({
         code_text: code,
         language: language || 'unknown',
+        user_id: userId || null,
         ai_explanation: analysis,
         ai_docstring: analysis.docstring || null,
         ai_rating: analysis.rating || null,

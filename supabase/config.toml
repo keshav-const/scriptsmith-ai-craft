@@ -1,4 +1,29 @@
 project_id = "iedxtmhjtfmyfcelmass"
 
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
 [functions.analyze-code]
+verify_jwt = false
+
+[functions.generate-docstring]
+verify_jwt = false
+
+[functions.rate-code]
+verify_jwt = false
+
+[functions.fix-code]
 verify_jwt = false

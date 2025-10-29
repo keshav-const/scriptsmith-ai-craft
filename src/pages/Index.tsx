@@ -1,151 +1,82 @@
-import { useState } from 'react';
-import { Header } from '@/components/Header';
-import { CodeEditor } from '@/components/CodeEditor';
-import { AnalysisResults } from '@/components/AnalysisResults';
-import { HistoryList } from '@/components/HistoryList';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Sparkles, History } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { Code2, Zap, Shield, History } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
-  const [code, setCode] = useState('// Paste your code here\nfunction example() {\n  console.log("Hello World");\n}');
-  const [language, setLanguage] = useState('javascript');
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleAnalyze = async () => {
-    if (!code.trim()) {
-      toast({
-        title: 'No code provided',
-        description: 'Please enter some code to analyze',
-        variant: 'destructive',
-      });
-      return;
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
     }
-
-    setIsAnalyzing(true);
-    setAnalysis(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('analyze-code', {
-        body: { code, language },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setAnalysis(data.analysis);
-      toast({
-        title: 'Analysis complete',
-        description: 'Your code has been analyzed successfully',
-      });
-    } catch (error) {
-      console.error('Analysis error:', error);
-      toast({
-        title: 'Analysis failed',
-        description: error instanceof Error ? error.message : 'An error occurred during analysis',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleSelectAnalysis = (selectedAnalysis: any, selectedCode: string, selectedLanguage: string) => {
-    setAnalysis(selectedAnalysis);
-    setCode(selectedCode);
-    setLanguage(selectedLanguage);
-  };
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="mb-2 text-3xl font-bold tracking-tight text-foreground">
-            Analyze Your Code
-          </h2>
-          <p className="text-muted-foreground">
-            Get instant feedback, explanations, and improvement suggestions powered by AI
+      <div className="container mx-auto px-4 py-16">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center mb-6">
+            <Code2 className="h-16 w-16 text-primary" />
+          </div>
+          <h1 className="text-5xl font-bold mb-4">ScriptSmith</h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            AI-Powered Code Analysis & Documentation Platform
           </p>
+          <div className="flex gap-4 justify-center">
+            <Button size="lg" onClick={() => navigate('/signup')}>
+              Get Started
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate('/login')}>
+              Login
+            </Button>
+          </div>
         </div>
 
-        <Tabs defaultValue="analyze" className="w-full">
-          <TabsList className="mb-6 grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="analyze" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Analyze
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="h-4 w-4" />
-              History
-            </TabsTrigger>
-          </TabsList>
+        {/* Features */}
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
+          <Card className="p-6">
+            <Zap className="h-12 w-12 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Instant Analysis</h3>
+            <p className="text-muted-foreground">
+              Get comprehensive code analysis with quality metrics, issues detection, and improvement suggestions in seconds.
+            </p>
+          </Card>
 
-          <TabsContent value="analyze" className="mt-0">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div className="space-y-4">
-                <CodeEditor
-                  value={code}
-                  onChange={(value) => setCode(value || '')}
-                  language={language}
-                  onLanguageChange={setLanguage}
-                />
-                
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Analyze Code
-                    </>
-                  )}
-                </Button>
-              </div>
+          <Card className="p-6">
+            <Shield className="h-12 w-12 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Smart Documentation</h3>
+            <p className="text-muted-foreground">
+              Auto-generate professional docstrings and documentation for your code with AI assistance.
+            </p>
+          </Card>
 
-              <div>
-                {analysis ? (
-                  <AnalysisResults analysis={analysis} language={language} />
-                ) : (
-                  <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-12 text-center">
-                    <div>
-                      <Sparkles className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-                      <h3 className="mb-2 text-lg font-medium text-foreground">No analysis yet</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Enter your code and click "Analyze Code" to get started
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
+          <Card className="p-6">
+            <History className="h-12 w-12 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Track Progress</h3>
+            <p className="text-muted-foreground">
+              Keep a complete history of all your code analyses and track improvements over time.
+            </p>
+          </Card>
+        </div>
 
-          <TabsContent value="history" className="mt-0">
-            <div className="mx-auto max-w-4xl">
-              <HistoryList onSelectAnalysis={handleSelectAnalysis} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* CTA */}
+        <div className="text-center">
+          <Card className="p-8 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4">Ready to improve your code?</h2>
+            <p className="text-muted-foreground mb-6">
+              Join ScriptSmith today and start analyzing your code with AI-powered insights.
+            </p>
+            <Button size="lg" onClick={() => navigate('/signup')}>
+              Create Free Account
+            </Button>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
