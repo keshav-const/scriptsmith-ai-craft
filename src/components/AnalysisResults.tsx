@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } fr
 import { useToast } from '@/hooks/use-toast';
 import { RatingMeter } from './RatingMeter';
 import { DocstringGenerator } from './DocstringGenerator';
+import { motion } from 'framer-motion';
 import {
   Collapsible,
   CollapsibleContent,
@@ -69,9 +70,14 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* Export Buttons */}
-      <Card className="p-6">
+      <Card className="p-6 glass border-border/50 shadow-lg">
         <h3 className="mb-3 text-lg font-semibold text-foreground">Export Options</h3>
         <ExportButtons 
           analysis={analysis} 
@@ -81,15 +87,21 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
       </Card>
 
       {/* Overall Explanation */}
-      <Card className="p-6">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-success" />
-          <div className="flex-1">
-            <h3 className="mb-2 text-lg font-semibold text-foreground">Code Overview</h3>
-            <p className="text-muted-foreground leading-relaxed">{analysis.explanation}</p>
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <Card className="p-6 glass border-border/50 shadow-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-success" />
+            <div className="flex-1">
+              <h3 className="mb-2 text-lg font-semibold text-foreground">Code Overview</h3>
+              <p className="text-muted-foreground leading-relaxed">{analysis.explanation}</p>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </motion.div>
 
       {/* Quality Metrics */}
       {analysis.rating && <RatingMeter rating={analysis.rating} />}
@@ -99,113 +111,132 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
 
       {/* Line by Line Analysis */}
       {analysis.lineByLine && analysis.lineByLine.length > 0 && (
-        <Card className="p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Line-by-Line Breakdown</h3>
-          <div className="space-y-4">
-            {analysis.lineByLine.map((item, idx) => (
-              <div key={idx} className="border-l-2 border-muted pl-4">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">Line {item.line}</span>
-                  <code className="rounded bg-muted px-2 py-0.5 text-xs font-mono text-foreground">
-                    {item.content}
-                  </code>
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Card className="p-6 glass border-border/50 shadow-lg">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">Line-by-Line Breakdown</h3>
+            <div className="space-y-4">
+              {analysis.lineByLine.map((item, idx) => (
+                <div key={idx} className="border-l-2 border-primary/30 pl-4">
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground">Line {item.line}</span>
+                    <code className="rounded-lg glass px-2 py-0.5 text-xs font-mono text-foreground">
+                      {item.content}
+                    </code>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.explanation}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">{item.explanation}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
       )}
 
       {/* Issues */}
       {analysis.issues && analysis.issues.length > 0 && (
-        <Card className="p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-            <h3 className="text-lg font-semibold text-foreground">Issues & Code Smells</h3>
-          </div>
-          <div className="space-y-4">
-            {analysis.issues.map((issue, idx) => (
-              <div key={idx} className="rounded-lg border border-border bg-muted/50 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Badge variant={severityColors[issue.severity]}>
-                    {issue.severity.toUpperCase()}
-                  </Badge>
-                  {issue.line && (
-                    <span className="text-xs text-muted-foreground">Line {issue.line}</span>
-                  )}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <Card className="p-6 glass border-border/50 shadow-lg">
+            <div className="mb-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <h3 className="text-lg font-semibold text-foreground">Issues & Code Smells</h3>
+            </div>
+            <div className="space-y-4">
+              {analysis.issues.map((issue, idx) => (
+                <div key={idx} className="rounded-xl glass-strong p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Badge variant={severityColors[issue.severity]}>
+                      {issue.severity.toUpperCase()}
+                    </Badge>
+                    {issue.line && (
+                      <span className="text-xs text-muted-foreground">Line {issue.line}</span>
+                    )}
+                  </div>
+                  <p className="mb-2 text-sm font-medium text-foreground">{issue.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Suggestion:</span> {issue.suggestion}
+                  </p>
                 </div>
-                <p className="mb-2 text-sm font-medium text-foreground">{issue.description}</p>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Suggestion:</span> {issue.suggestion}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
       )}
 
       {/* Improvements */}
       {analysis.improvements && analysis.improvements.length > 0 && (
-        <Card className="p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-accent" />
-            <h3 className="text-lg font-semibold text-foreground">Suggested Improvements</h3>
-          </div>
-          <div className="space-y-6">
-            {analysis.improvements.map((improvement, idx) => (
-              <div key={idx}>
-                <h4 className="mb-2 font-medium text-foreground">{improvement.title}</h4>
-                <p className="mb-3 text-sm text-muted-foreground">{improvement.description}</p>
-                {improvement.code && (
-                  <Collapsible
-                    open={openSections[`improvement-${idx}`]}
-                    onOpenChange={() => toggleSection(`improvement-${idx}`)}
-                  >
-                    <div className="rounded-lg border border-border">
-                      <CollapsibleTrigger asChild>
-                        <button className="flex w-full items-center justify-between bg-muted/50 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
-                          <span>Show Suggested Fix</span>
-                          {openSections[`improvement-${idx}`] ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="relative">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-2 z-10"
-                            onClick={() => copyToClipboard(improvement.code || '')}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <SyntaxHighlighter
-                            language={language}
-                            style={atomOneDark}
-                            customStyle={{
-                              margin: 0,
-                              padding: '1rem',
-                              paddingTop: '2.5rem',
-                              fontSize: '0.875rem',
-                              background: 'hsl(var(--card))',
-                            }}
-                          >
-                            {improvement.code}
-                          </SyntaxHighlighter>
-                        </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        >
+          <Card className="p-6 glass border-border/50 shadow-lg">
+            <div className="mb-4 flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Suggested Improvements</h3>
+            </div>
+            <div className="space-y-6">
+              {analysis.improvements.map((improvement, idx) => (
+                <div key={idx}>
+                  <h4 className="mb-2 font-medium text-foreground">{improvement.title}</h4>
+                  <p className="mb-3 text-sm text-muted-foreground">{improvement.description}</p>
+                  {improvement.code && (
+                    <Collapsible
+                      open={openSections[`improvement-${idx}`]}
+                      onOpenChange={() => toggleSection(`improvement-${idx}`)}
+                    >
+                      <div className="rounded-xl glass-strong overflow-hidden">
+                        <CollapsibleTrigger asChild>
+                          <button className="flex w-full items-center justify-between glass-strong px-4 py-3 text-sm font-medium text-foreground hover:bg-primary/5 transition-all duration-300">
+                            <span>Show Suggested Fix</span>
+                            {openSections[`improvement-${idx}`] ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-2 z-10 hover-lift"
+                              onClick={() => copyToClipboard(improvement.code || '')}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <SyntaxHighlighter
+                              language={language}
+                              style={atomOneDark}
+                              customStyle={{
+                                margin: 0,
+                                padding: '1rem',
+                                paddingTop: '2.5rem',
+                                fontSize: '0.875rem',
+                                background: 'hsl(var(--card))',
+                                borderRadius: '0 0 0.75rem 0.75rem',
+                              }}
+                            >
+                              {improvement.code}
+                            </SyntaxHighlighter>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };

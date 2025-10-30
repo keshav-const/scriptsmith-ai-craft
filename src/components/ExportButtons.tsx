@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Copy, Download, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ExportButtonsProps {
   analysis: any;
@@ -57,7 +58,6 @@ ${analysis.improvements.map((imp: any, i: number) => `${i + 1}. ${imp.descriptio
   };
 
   const exportAsPDF = () => {
-    // Simple PDF export using browser print
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({
@@ -73,13 +73,13 @@ ${analysis.improvements.map((imp: any, i: number) => `${i + 1}. ${imp.descriptio
         <head>
           <title>Code Analysis Report</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+            body { font-family: 'Satoshi', Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
             h1 { color: #333; }
             h2 { color: #666; margin-top: 20px; }
-            pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+            pre { background: #f4f4f4; padding: 10px; border-radius: 8px; overflow-x: auto; }
             .metric { margin: 10px 0; }
-            .issue { margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 4px; }
-            .improvement { margin: 10px 0; padding: 10px; background: #d1ecf1; border-radius: 4px; }
+            .issue { margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 8px; }
+            .improvement { margin: 10px 0; padding: 10px; background: #d1ecf1; border-radius: 8px; }
           </style>
         </head>
         <body>
@@ -130,23 +130,28 @@ ${analysis.improvements.map((imp: any, i: number) => `${i + 1}. ${imp.descriptio
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <motion.div 
+      className="flex flex-wrap gap-2"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       {docstring && (
-        <Button variant="outline" size="sm" onClick={copyDocstring} className="gap-2">
+        <Button variant="glass" size="sm" onClick={copyDocstring} className="gap-2 hover-lift">
           <Copy className="h-4 w-4" />
           Copy Docstring
         </Button>
       )}
       
-      <Button variant="outline" size="sm" onClick={copyFullReport} className="gap-2">
+      <Button variant="glass" size="sm" onClick={copyFullReport} className="gap-2 hover-lift">
         <FileText className="h-4 w-4" />
-        Copy Full Report
+        Copy Report
       </Button>
       
-      <Button variant="outline" size="sm" onClick={exportAsPDF} className="gap-2">
+      <Button variant="glass" size="sm" onClick={exportAsPDF} className="gap-2 hover-lift">
         <Download className="h-4 w-4" />
-        Export as PDF
+        Export PDF
       </Button>
-    </div>
+    </motion.div>
   );
 };

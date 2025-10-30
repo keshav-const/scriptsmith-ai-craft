@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { Code2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -28,52 +29,63 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="flex items-center justify-center mb-6">
-          <Code2 className="h-10 w-10 text-primary" />
-          <h1 className="text-3xl font-bold ml-2">ScriptSmith</h1>
-        </div>
-        
-        <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="w-full max-w-md p-8 glass-strong shadow-xl">
+          <div className="flex flex-col items-center mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30 mb-3">
+              <Code2 className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">ScriptSmith</h1>
           </div>
           
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          <h2 className="text-xl font-semibold text-center mb-2 text-foreground">Welcome Back</h2>
+          <p className="text-center text-muted-foreground mb-6 text-sm">Sign in to continue</p>
           
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
-          </Button>
-        </form>
-        
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </Card>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="glass border-border/50 mt-1.5"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="glass border-border/50 mt-1.5"
+              />
+            </div>
+            
+            <Button type="submit" className="w-full hover-lift" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+          
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-primary hover:underline font-medium transition-all duration-300">
+              Sign up
+            </Link>
+          </p>
+        </Card>
+      </motion.div>
     </div>
   );
 };

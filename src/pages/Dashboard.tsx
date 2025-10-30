@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
+import { motion } from 'framer-motion';
 
 const Dashboard = () => {
   const [code, setCode] = useState('');
@@ -71,18 +72,27 @@ const Dashboard = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <Header />
         
         <main className="container mx-auto px-4 py-8">
           <Tabs defaultValue="analyze" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
-              <TabsTrigger value="analyze">Analyze Code</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8 glass border-border/50">
+              <TabsTrigger value="analyze" className="data-[state=active]:bg-primary/20">
+                Analyze Code
+              </TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-primary/20">
+                History
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="analyze" className="space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
+              <motion.div 
+                className="grid gap-6 lg:grid-cols-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 <div className="space-y-4">
                   <CodeEditor
                     value={code}
@@ -94,7 +104,7 @@ const Dashboard = () => {
                   <Button
                     onClick={analyzeCode}
                     disabled={isAnalyzing || !code.trim()}
-                    className="w-full"
+                    className="w-full hover-lift"
                     size="lg"
                   >
                     {isAnalyzing ? (
@@ -111,7 +121,7 @@ const Dashboard = () => {
                 <div>
                   {analysis && <AnalysisResults analysis={analysis} language={language} />}
                 </div>
-              </div>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="history">

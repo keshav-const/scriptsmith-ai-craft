@@ -21,24 +21,24 @@ export const DocstringGenerator = ({ docstring }: DocstringGeneratorProps) => {
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 glass border-border/50 shadow-lg">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-muted-foreground" />
+          <FileText className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold text-foreground">Generated Docstrings</h3>
         </div>
         <Button
-          variant="outline"
+          variant="glass"
           size="sm"
           onClick={handleCopy}
-          className="gap-2"
+          className="gap-2 hover-lift"
         >
           <Copy className="h-4 w-4" />
           Copy
         </Button>
       </div>
       
-      <pre className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground overflow-x-auto">
+      <pre className="rounded-xl border border-border/50 glass-strong p-4 text-sm text-foreground overflow-x-auto">
         <code>{docstring}</code>
       </pre>
     </Card>

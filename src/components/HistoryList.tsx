@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { History, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { motion } from 'framer-motion';
 
 interface HistoryItem {
   id: string;
@@ -59,9 +60,9 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Card className="p-6 glass">
         <div className="flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       </Card>
     );
@@ -69,7 +70,7 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
 
   if (history.length === 0) {
     return (
-      <Card className="p-6">
+      <Card className="p-6 glass">
         <div className="text-center">
           <History className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">No analysis history yet</p>
@@ -79,17 +80,20 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 glass border-border/50 shadow-lg">
       <h3 className="mb-4 text-lg font-semibold text-foreground">Analysis History</h3>
       <div className="space-y-3">
-        {history.map((item) => (
-          <button
+        {history.map((item, index) => (
+          <motion.button
             key={item.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => onSelectAnalysis(item.ai_explanation, item.code_text, item.language)}
-            className="w-full rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+            className="w-full rounded-xl border border-border/50 glass p-4 text-left transition-all duration-300 hover:bg-primary/5 hover-lift"
           >
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-mono text-muted-foreground">{item.language}</span>
+              <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{item.language}</span>
               <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
               </span>
@@ -97,7 +101,7 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
             <p className="line-clamp-2 text-sm text-foreground">
               {item.code_text.substring(0, 100)}...
             </p>
-          </button>
+          </motion.button>
         ))}
       </div>
     </Card>

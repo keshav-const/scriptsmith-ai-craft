@@ -26,13 +26,13 @@ const LANGUAGES = [
 
 export const CodeEditor = ({ value, onChange, language, onLanguageChange }: CodeEditorProps) => {
   return (
-    <Card className="overflow-hidden border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border bg-muted px-4 py-2">
-        <h2 className="text-sm font-medium text-foreground">Code Input</h2>
+    <Card className="overflow-hidden glass border-border/50 shadow-lg">
+      <div className="flex items-center justify-between border-b border-border/50 glass-strong px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Code Input</h2>
         <select
           value={language}
           onChange={(e) => onLanguageChange(e.target.value)}
-          className="rounded-md border border-border bg-background px-3 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="rounded-lg border border-border/50 glass px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang} value={lang}>
