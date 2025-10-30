@@ -1,6 +1,7 @@
 import { Code2, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +22,7 @@ export const Header = () => {
           <div className="text-sm text-muted-foreground">
             Powered by Gemini 2.5 Pro
           </div>
+          <ThemeToggle />
           {user && (
             <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
               <LogOut className="h-4 w-4" />

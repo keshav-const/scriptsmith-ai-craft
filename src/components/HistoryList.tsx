@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { History, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -22,16 +23,22 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (user) {
+      loadHistory();
+    }
+  }, [user]);
 
   const loadHistory = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('code_analyses')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
 

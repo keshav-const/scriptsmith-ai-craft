@@ -20,6 +20,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'User authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Analyzing code with Gemini 2.5 Pro...');
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -143,7 +150,7 @@ Return the analysis in this exact JSON structure:
       .insert({
         code_text: code,
         language: language || 'unknown',
-        user_id: userId || null,
+        user_id: userId,
         ai_explanation: analysis,
         ai_docstring: analysis.docstring || null,
         ai_rating: analysis.rating || null,
