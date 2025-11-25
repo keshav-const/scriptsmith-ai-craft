@@ -18,14 +18,14 @@ serve(async (req) => {
       throw new Error('Code is required');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
     console.log('Fixing code for language:', language);
 
-    const issuesContext = issues && issues.length > 0 
+    const issuesContext = issues && issues.length > 0
       ? `\n\nKnown issues to fix:\n${issues.map((i: any) => `- ${i.description}`).join('\n')}`
       : '';
 
@@ -43,65 +43,66 @@ Return a JSON object with:
   "explanation": "brief explanation of improvements"
 }`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "improve_code",
-            description: "Return improved code with changes",
-            parameters: {
-              type: "object",
-              properties: {
-                improved_code: {
-                  type: "string",
-                  description: "The refactored and improved code"
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          tools: [{
+            functionDeclarations: [{
+              name: "improve_code",
+              description: "Return improved code with changes",
+              parameters: {
+                type: "object",
+                properties: {
+                  improved_code: {
+                    type: "string",
+                    description: "The refactored and improved code"
+                  },
+                  changes: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of specific changes made"
+                  },
+                  explanation: {
+                    type: "string",
+                    description: "Brief explanation of the improvements"
+                  }
                 },
-                changes: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "List of specific changes made"
-                },
-                explanation: {
-                  type: "string",
-                  description: "Brief explanation of the improvements"
-                }
-              },
-              required: ["improved_code", "changes", "explanation"],
-              additionalProperties: false
+                required: ["improved_code", "changes", "explanation"]
+              }
+            }]
+          }],
+          toolConfig: {
+            functionCallingConfig: {
+              mode: "ANY",
+              allowedFunctionNames: ["improve_code"]
             }
           }
-        }],
-        tool_choice: { type: "function", function: { name: "improve_code" } }
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const toolCall = data.choices[0].message.tool_calls?.[0];
-    
-    if (!toolCall) {
-      throw new Error('No improvement data received from AI');
+    const functionCall = data.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+
+    if (!functionCall || functionCall.name !== 'improve_code') {
+      throw new Error('No improvement data received from Gemini AI');
     }
 
-    const improvement = JSON.parse(toolCall.function.arguments);
+    const improvement = functionCall.args;
 
     return new Response(
       JSON.stringify(improvement),
@@ -112,7 +113,7 @@ Return a JSON object with:
     console.error('Error in fix-code function:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { 
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# ScriptSmith AI Craft
 
-## Project info
+A powerful AI-powered code analysis and improvement tool built with React, TypeScript, and Gemini AI.
 
-**URL**: https://lovable.dev/projects/c230a76d-60c3-4163-92b3-3be0ebe48c54
+## Features
 
-## How can I edit this code?
+- **Code Analysis**: Get comprehensive code analysis with quality metrics
+- **Code Improvement**: Automatically refactor and improve your code
+- **Docstring Generation**: Generate professional documentation
+- **Code Rating**: Get quality ratings for complexity, readability, and maintainability
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React, TypeScript, Vite
+- **UI**: shadcn-ui, Tailwind CSS
+- **Backend**: Supabase Edge Functions
+- **AI**: Google Gemini API
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c230a76d-60c3-4163-92b3-3be0ebe48c54) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Supabase account
+- Google Gemini API key
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd scriptsmith-ai-craft
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
+
+### Environment Variables
+
+Create a `.env` file with the following:
+
+```env
+VITE_SUPABASE_PROJECT_ID=your_project_id
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+VITE_SUPABASE_URL=your_supabase_url
+```
+
+For Supabase Edge Functions, set `GEMINI_API_KEY` in your Supabase project secrets.
+
+### Development
+
+```sh
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Deployment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Deploy to any static hosting service (Vercel, Netlify, etc.) or use Supabase hosting.
 
-**Use GitHub Codespaces**
+## Supabase Edge Functions
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The project includes 4 edge functions:
+- `analyze-code` - Comprehensive code analysis
+- `fix-code` - Code improvement and refactoring
+- `generate-docstring` - Documentation generation
+- `rate-code` - Code quality rating
 
-## What technologies are used for this project?
+Deploy functions:
+```sh
+supabase functions deploy
+```
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/c230a76d-60c3-4163-92b3-3be0ebe48c54) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT

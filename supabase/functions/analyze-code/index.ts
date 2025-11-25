@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const { code, language, userId } = await req.json();
-    
+
     if (!code) {
       return new Response(
         JSON.stringify({ error: 'Code is required' }),
@@ -27,26 +27,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Analyzing code with Gemini 2.5 Pro...');
-    
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    console.log('Analyzing code with Gemini 2.0 Flash...');
+
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
-    // Call Lovable AI Gateway with Gemini 2.5 Pro
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert code analyzer. Analyze code and provide comprehensive feedback including quality metrics, docstrings, and improvement suggestions.
+    const systemPrompt = `You are an expert code analyzer. Analyze code and provide comprehensive feedback including quality metrics, docstrings, and improvement suggestions.
             
 Return the analysis in this exact JSON structure:
 {
@@ -79,42 +67,54 @@ Return the analysis in this exact JSON structure:
       "code": "suggested improved code"
     }
   ]
-}`
-          },
-          {
-            role: 'user',
-            content: `Analyze this ${language || 'code'} in detail. Include quality metrics (complexity, readability, maintainability score 1-10), generate appropriate docstrings/comments, identify issues, and suggest improvements:\n\n${code}`
+}`;
+
+    const userPrompt = `Analyze this ${language || 'code'} in detail. Include quality metrics (complexity, readability, maintainability score 1-10), generate appropriate docstrings/comments, identify issues, and suggest improvements:\n\n${code}`;
+
+    // Call Gemini API directly
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              { text: userPrompt }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
           }
-        ],
-      }),
-    });
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
-      
+      console.error('Gemini API error:', aiResponse.status, errorText);
+
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits depleted. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`AI gateway error: ${aiResponse.status}`);
+
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content;
-    
+    const aiContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
     if (!aiContent) {
-      throw new Error('No response from AI');
+      throw new Error('No response from Gemini AI');
     }
 
     // Parse the AI response
@@ -138,13 +138,13 @@ Return the analysis in this exact JSON structure:
     // Store in database
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
+
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Supabase credentials not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    
+
     const { data: savedAnalysis, error: dbError } = await supabase
       .from('code_analyses')
       .insert({
@@ -176,8 +176,8 @@ Return the analysis in this exact JSON structure:
   } catch (error) {
     console.error('Error in analyze-code function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
