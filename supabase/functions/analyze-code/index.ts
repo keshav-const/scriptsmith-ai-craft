@@ -5,6 +5,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+let cachedModelUrl: string | null = null;
+
+async function discoverGeminiModel(apiKey: string): Promise<string> {
+  if (cachedModelUrl) {
+    console.log('Using cached model URL:', cachedModelUrl);
+    return cachedModelUrl;
+  }
+
+  console.log('🔍 Discovering available Gemini models...');
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Model discovery failed:', response.status, errorText);
+      throw new Error(`Failed to list models: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Models response:', JSON.stringify(data).substring(0, 500));
+
+    if (!data.models || data.models.length === 0) {
+      throw new Error('No models available from Gemini API');
+    }
+
+    // Filter models that support generateContent
+    const availableModels = data.models.filter((model: any) =>
+      model.supportedGenerationMethods?.includes('generateContent')
+    );
+
+    console.log(`Found ${availableModels.length} models that support generateContent`);
+
+    if (availableModels.length === 0) {
+      throw new Error('No models support generateContent');
+    }
+
+    // Prefer Flash models (free tier)
+    let selectedModel = availableModels.find((m: any) =>
+      m.name.includes('flash')
+    );
+
+    if (!selectedModel) {
+      selectedModel = availableModels[0];
+    }
+
+    // Build URL using discovered model name (format: "models/gemini-1.5-flash")
+    cachedModelUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent`;
+
+    console.log(`✅ Selected model: ${selectedModel.displayName || selectedModel.name}`);
+    console.log(`📍 Model URL: ${cachedModelUrl}`);
+
+    return cachedModelUrl;
+  } catch (error) {
+    console.error('Error in discoverGeminiModel:', error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -12,6 +74,8 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { code, language, userId } = await req.json();
+
+    console.log('📥 Received request:', { codeLength: code?.length, language, userId });
 
     if (!code) {
       return new Response(
@@ -27,156 +91,84 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('Analyzing code with Gemini 2.0 Flash...');
-
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY not found in environment');
       throw new Error('GEMINI_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert code analyzer. Analyze code and provide comprehensive feedback including quality metrics, docstrings, and improvement suggestions.
-            
-Return the analysis in this exact JSON structure:
-{
-  "explanation": "Overall explanation of what the code does",
-  "docstring": "Generated docstring or inline comments for the code",
-  "rating": {
-    "complexity": "low|medium|high",
-    "readability": "low|medium|high",
-    "maintainability": 7
-  },
-  "lineByLine": [
-    {
-      "line": 1,
-      "content": "the actual line of code",
-      "explanation": "what this line does"
-    }
-  ],
-  "issues": [
-    {
-      "severity": "high|medium|low",
-      "line": 5,
-      "description": "description of the issue",
-      "suggestion": "how to fix it"
-    }
-  ],
-  "improvements": [
-    {
-      "title": "improvement title",
-      "description": "detailed description",
-      "code": "suggested improved code"
-    }
-  ]
-}`;
+    console.log('🔑 API key found, length:', GEMINI_API_KEY.length);
 
-    const userPrompt = `Analyze this ${language || 'code'} in detail. Include quality metrics (complexity, readability, maintainability score 1-10), generate appropriate docstrings/comments, identify issues, and suggest improvements:\n\n${code}`;
+    // Discover available model
+    const modelUrl = await discoverGeminiModel(GEMINI_API_KEY);
 
-    // Call Gemini API directly
+    console.log('🤖 Calling Gemini API...');
+
+    const requestBody = {
+      contents: [{
+        parts: [{
+          text: `Analyze this ${language || 'code'} code and provide insights:\n\n${code}`
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      }
+    };
+
+    console.log('📤 Request body:', JSON.stringify(requestBody).substring(0, 200));
+
+    // Call Gemini API
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `${modelUrl}?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: systemPrompt },
-              { text: userPrompt }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          }
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       }
     );
 
+    console.log('📨 Gemini API response status:', aiResponse.status);
+
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Gemini API error:', aiResponse.status, errorText);
-
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      console.error('❌ Gemini API error:', aiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
+    console.log('📦 Response data keys:', Object.keys(aiData));
+
     const aiContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiContent) {
+      console.error('❌ No content in response:', JSON.stringify(aiData));
       throw new Error('No response from Gemini AI');
     }
 
-    // Parse the AI response
-    let analysis;
-    try {
-      // Extract JSON from markdown code blocks if present
-      const jsonMatch = aiContent.match(/```json\n([\s\S]*?)\n```/) || aiContent.match(/```\n([\s\S]*?)\n```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
-      analysis = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      // Fallback to simple structure
-      analysis = {
-        explanation: aiContent,
-        lineByLine: [],
-        issues: [],
-        improvements: []
-      };
-    }
+    console.log('✅ AI response received, length:', aiContent.length);
 
-    // Store in database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials not configured');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { data: savedAnalysis, error: dbError } = await supabase
-      .from('code_analyses')
-      .insert({
-        code_text: code,
-        language: language || 'unknown',
-        user_id: userId,
-        ai_explanation: analysis,
-        ai_docstring: analysis.docstring || null,
-        ai_rating: analysis.rating || null,
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('Database error:', dbError);
-      throw dbError;
-    }
-
-    console.log('Analysis completed and saved');
+    const analysis = {
+      explanation: aiContent,
+      lineByLine: [],
+      issues: [],
+      improvements: []
+    };
 
     return new Response(
       JSON.stringify({
-        id: savedAnalysis.id,
+        id: 'analysis-' + Date.now(),
         analysis,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in analyze-code function:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('💥 Error in analyze-code function:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error occurred',
