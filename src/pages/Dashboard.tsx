@@ -74,7 +74,7 @@ const Dashboard = () => {
     <AuthGuard>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <Header />
-        
+
         <main className="container mx-auto px-4 py-8">
           <Tabs defaultValue="analyze" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8 glass border-border/50">
@@ -87,20 +87,21 @@ const Dashboard = () => {
             </TabsList>
 
             <TabsContent value="analyze" className="space-y-6">
-              <motion.div 
+              <motion.div
                 className="grid gap-6 lg:grid-cols-2"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="space-y-4">
+                {/* Sticky code editor section */}
+                <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
                   <CodeEditor
                     value={code}
                     onChange={setCode}
                     language={language}
                     onLanguageChange={setLanguage}
                   />
-                  
+
                   <Button
                     onClick={analyzeCode}
                     disabled={isAnalyzing || !code.trim()}
@@ -118,7 +119,8 @@ const Dashboard = () => {
                   </Button>
                 </div>
 
-                <div>
+                {/* Scrollable analysis results section */}
+                <div className="lg:min-h-screen">
                   {analysis && <AnalysisResults analysis={analysis} language={language} />}
                 </div>
               </motion.div>

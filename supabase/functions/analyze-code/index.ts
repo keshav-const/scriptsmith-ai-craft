@@ -9,62 +9,33 @@ let cachedModelUrl: string | null = null;
 
 async function discoverGeminiModel(apiKey: string): Promise<string> {
   if (cachedModelUrl) {
-    console.log('Using cached model URL:', cachedModelUrl);
     return cachedModelUrl;
   }
 
-  console.log('🔍 Discovering available Gemini models...');
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+  );
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-      { method: 'GET', headers: { 'Content-Type': 'application/json' } }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Model discovery failed:', response.status, errorText);
-      throw new Error(`Failed to list models: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('Models response:', JSON.stringify(data).substring(0, 500));
-
-    if (!data.models || data.models.length === 0) {
-      throw new Error('No models available from Gemini API');
-    }
-
-    // Filter models that support generateContent
-    const availableModels = data.models.filter((model: any) =>
-      model.supportedGenerationMethods?.includes('generateContent')
-    );
-
-    console.log(`Found ${availableModels.length} models that support generateContent`);
-
-    if (availableModels.length === 0) {
-      throw new Error('No models support generateContent');
-    }
-
-    // Prefer Flash models (free tier)
-    let selectedModel = availableModels.find((m: any) =>
-      m.name.includes('flash')
-    );
-
-    if (!selectedModel) {
-      selectedModel = availableModels[0];
-    }
-
-    // Build URL using discovered model name (format: "models/gemini-1.5-flash")
-    cachedModelUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent`;
-
-    console.log(`✅ Selected model: ${selectedModel.displayName || selectedModel.name}`);
-    console.log(`📍 Model URL: ${cachedModelUrl}`);
-
-    return cachedModelUrl;
-  } catch (error) {
-    console.error('Error in discoverGeminiModel:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Failed to list models: ${response.status}`);
   }
+
+  const data = await response.json();
+
+  const availableModels = data.models.filter((model: any) =>
+    model.supportedGenerationMethods?.includes('generateContent')
+  );
+
+  const selectedModel = availableModels.find((m: any) =>
+    m.name.includes('flash')
+  ) || availableModels[0];
+
+  cachedModelUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent`;
+
+  console.log(`✅ Using model: ${selectedModel.displayName || selectedModel.name}`);
+
+  return cachedModelUrl;
 }
 
 Deno.serve(async (req: Request) => {
@@ -74,8 +45,6 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { code, language, userId } = await req.json();
-
-    console.log('📥 Received request:', { codeLength: code?.length, language, userId });
 
     if (!code) {
       return new Response(
@@ -93,69 +62,124 @@ Deno.serve(async (req: Request) => {
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) {
-      console.error('❌ GEMINI_API_KEY not found in environment');
       throw new Error('GEMINI_API_KEY is not configured');
     }
 
-    console.log('🔑 API key found, length:', GEMINI_API_KEY.length);
-
-    // Discover available model
     const modelUrl = await discoverGeminiModel(GEMINI_API_KEY);
 
-    console.log('🤖 Calling Gemini API...');
+    const systemPrompt = `You are an expert code analyzer. Analyze the provided code and return a comprehensive analysis in the following EXACT JSON structure. Do not include markdown code blocks, just return pure JSON:
 
-    const requestBody = {
-      contents: [{
-        parts: [{
-          text: `Analyze this ${language || 'code'} code and provide insights:\n\n${code}`
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
-      }
-    };
+{
+  "explanation": "Overall explanation of what the code does and its purpose",
+  "docstring": "Generated docstring or inline comments for the code",
+  "rating": {
+    "complexity": "low|medium|high",
+    "readability": "low|medium|high",
+    "maintainability": 7
+  },
+  "lineByLine": [
+    {
+      "line": 1,
+      "content": "the actual line of code",
+      "explanation": "detailed explanation of what this line does"
+    }
+  ],
+  "issues": [
+    {
+      "severity": "high|medium|low",
+      "line": 5,
+      "description": "description of the issue or code smell",
+      "suggestion": "how to fix it"
+    }
+  ],
+  "improvements": [
+    {
+      "title": "improvement title",
+      "description": "detailed description of the improvement",
+      "code": "suggested improved code snippet"
+    }
+  ]
+}
 
-    console.log('📤 Request body:', JSON.stringify(requestBody).substring(0, 200));
+IMPORTANT: Return ONLY valid JSON, no markdown formatting, no code blocks.`;
 
-    // Call Gemini API
+    const userPrompt = `Analyze this ${language || 'code'} code in detail:\n\n${code}`;
+
     const aiResponse = await fetch(
       `${modelUrl}?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              { text: userPrompt }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 8192,
+          }
+        }),
       }
     );
 
-    console.log('📨 Gemini API response status:', aiResponse.status);
-
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('❌ Gemini API error:', aiResponse.status, errorText);
-      throw new Error(`Gemini API error: ${aiResponse.status} - ${errorText}`);
+      console.error('Gemini API error:', aiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('📦 Response data keys:', Object.keys(aiData));
-
     const aiContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiContent) {
-      console.error('❌ No content in response:', JSON.stringify(aiData));
       throw new Error('No response from Gemini AI');
     }
 
-    console.log('✅ AI response received, length:', aiContent.length);
+    // Parse the JSON response
+    let analysis;
+    try {
+      // Remove markdown code blocks if present
+      const jsonMatch = aiContent.match(/```json\n?([\s\S]*?)\n?```/) || aiContent.match(/```\n?([\s\S]*?)\n?```/);
+      const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
+      analysis = JSON.parse(jsonString.trim());
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      // Fallback structure
+      analysis = {
+        explanation: aiContent,
+        docstring: '',
+        rating: {
+          complexity: 'medium',
+          readability: 'medium',
+          maintainability: 5
+        },
+        lineByLine: [],
+        issues: [],
+        improvements: []
+      };
+    }
 
-    const analysis = {
-      explanation: aiContent,
-      lineByLine: [],
-      issues: [],
-      improvements: []
-    };
+    // Store in database
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      await supabase.from('code_analyses').insert({
+        code_text: code,
+        language: language || 'unknown',
+        user_id: userId,
+        ai_explanation: analysis,
+        ai_docstring: analysis.docstring || null,
+        ai_rating: analysis.rating || null,
+      });
+    }
 
     return new Response(
       JSON.stringify({
@@ -166,8 +190,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error('💥 Error in analyze-code function:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('Error in analyze-code function:', error);
 
     return new Response(
       JSON.stringify({
