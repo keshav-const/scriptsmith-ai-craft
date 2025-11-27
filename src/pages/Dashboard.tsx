@@ -20,7 +20,10 @@ const Dashboard = () => {
   const [scoreBreakdown, setScoreBreakdown] = useState<any>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [codeHistory, setCodeHistory] = useState<string[]>([]);
+  const [currentCode, setCurrentCode] = useState<string | undefined>(undefined);
+
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [appliedFixes, setAppliedFixes] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -69,22 +72,55 @@ const Dashboard = () => {
       setIsAnalyzing(false);
     }
   };
-  const applyCodeFix = (newCode: string, startLine?: number, endLine?: number) => {
+  // const applyCodeFix = (newCode: string, startLine?: number, endLine?: number) => {
+  //   // Save current code to history before applying fix
+  //   const newHistory = codeHistory.slice(0, historyIndex + 1);
+  //   newHistory.push(code);
+  //   setCodeHistory(newHistory);
+  //   setHistoryIndex(newHistory.length);
+  //   let finalCode: string;
+  //   if (startLine !== undefined && endLine !== undefined) {
+  //     // Line-based replacement
+  //     const lines = code.split('\n');
+  //     const before = lines.slice(0, startLine - 1);
+  //     const after = lines.slice(endLine);
+  //     const newLines = newCode.split('\n');
+
+  //     finalCode = [...before, ...newLines, ...after].join('\n');
+
+  //     toast({
+  //       title: 'Fix applied!',
+  //       description: `Updated lines ${startLine}-${endLine}`,
+  //     });
+  //   } else {
+  //     // Full file replacement (fallback)
+  //     finalCode = newCode;
+
+  //     toast({
+  //       title: 'Code replaced!',
+  //       description: 'Full code has been updated',
+  //     });
+  //   }
+  //   // Apply the new code
+  //   setCode(finalCode);
+  // };
+  // Undo code change
+  const applyCodeFix = (newCode: string, startLine?: number, endLine?: number, fixId?: string) => {
     // Save current code to history before applying fix
     const newHistory = codeHistory.slice(0, historyIndex + 1);
     newHistory.push(code);
     setCodeHistory(newHistory);
     setHistoryIndex(newHistory.length);
+
     let finalCode: string;
+
     if (startLine !== undefined && endLine !== undefined) {
       // Line-based replacement
       const lines = code.split('\n');
       const before = lines.slice(0, startLine - 1);
       const after = lines.slice(endLine);
       const newLines = newCode.split('\n');
-
       finalCode = [...before, ...newLines, ...after].join('\n');
-
       toast({
         title: 'Fix applied!',
         description: `Updated lines ${startLine}-${endLine}`,
@@ -92,20 +128,30 @@ const Dashboard = () => {
     } else {
       // Full file replacement (fallback)
       finalCode = newCode;
-
       toast({
         title: 'Code replaced!',
         description: 'Full code has been updated',
       });
     }
+
     // Apply the new code
     setCode(finalCode);
+
+    // Mark this fix as applied
+    if (fixId) {
+      setAppliedFixes(prev => new Set(prev).add(fixId));
+    }
   };
-  // Undo code change
   const undoCodeChange = () => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
       setCode(codeHistory[historyIndex - 1]);
+
+      // Clear applied fixes when undoing to original
+      if (historyIndex - 1 === 0) {
+        setAppliedFixes(new Set());
+      }
+
       toast({
         title: 'Undone',
         description: 'Reverted to previous code',
@@ -213,6 +259,7 @@ const Dashboard = () => {
                       scoreBreakdown={scoreBreakdown}
                       onApplyFix={applyCodeFix}
                       currentCode={code}
+                      appliedFixes={appliedFixes}
                     />
                   )}
                 </div>

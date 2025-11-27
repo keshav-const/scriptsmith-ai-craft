@@ -45,6 +45,21 @@ interface AnalysisData {
   }>;
 }
 
+// interface AnalysisResultsProps {
+//   analysis: AnalysisData;
+//   language: string;
+//   qualityScore?: number;
+//   scoreBreakdown?: {
+//     baseScore: number;
+//     issuesPenalty: number;
+//     complexityPenalty: number;
+//     readabilityBonus: number;
+//     maintainabilityScore: number;
+//   };
+//   onApplyFix?: (newCode: string, startLine?: number, endLine?: number) => void;
+
+//   currentCode?: string;
+// }
 interface AnalysisResultsProps {
   analysis: AnalysisData;
   language: string;
@@ -56,18 +71,17 @@ interface AnalysisResultsProps {
     readabilityBonus: number;
     maintainabilityScore: number;
   };
-  onApplyFix?: (newCode: string, startLine?: number, endLine?: number) => void;
-
+  onApplyFix?: (newCode: string, startLine?: number, endLine?: number, fixId?: string) => void;
   currentCode?: string;
+  appliedFixes?: Set<string>;
 }
-
 const severityColors = {
   high: 'destructive',
   medium: 'default',
   low: 'secondary',
 } as const;
 
-export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown, onApplyFix, currentCode }: AnalysisResultsProps) => {
+export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown, onApplyFix, currentCode, appliedFixes = new Set() }: AnalysisResultsProps) => {
   const { toast } = useToast();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -230,24 +244,42 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
                         <CollapsibleContent>
                           <div className="relative">
                             {onApplyFix && improvement.code && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="absolute left-2 top-2 z-10 hover-lift bg-primary"
-                                onClick={() => onApplyFix(
-                                  improvement.code || '',
-                                  improvement.startLine,
-                                  improvement.endLine
-                                )}
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Apply Fix
-                                {improvement.startLine && improvement.endLine && (
-                                  <span className="ml-1 text-xs opacity-75">
-                                    (L{improvement.startLine}-{improvement.endLine})
-                                  </span>
-                                )}
-                              </Button>
+                              (() => {
+                                const fixId = `fix-${idx}-${improvement.startLine}-${improvement.endLine}`;
+                                const isApplied = appliedFixes.has(fixId);
+
+                                return (
+                                  <Button
+                                    variant={isApplied ? "secondary" : "default"}
+                                    size="sm"
+                                    className={`absolute left-2 top-2 z-10 ${isApplied ? 'opacity-60' : 'hover-lift bg-primary'}`}
+                                    onClick={() => onApplyFix(
+                                      improvement.code || '',
+                                      improvement.startLine,
+                                      improvement.endLine,
+                                      fixId
+                                    )}
+                                    disabled={isApplied}
+                                  >
+                                    {isApplied ? (
+                                      <>
+                                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                                        Applied
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                                        Apply Fix
+                                      </>
+                                    )}
+                                    {improvement.startLine && improvement.endLine && (
+                                      <span className="ml-1 text-xs opacity-75">
+                                        (L{improvement.startLine}-{improvement.endLine})
+                                      </span>
+                                    )}
+                                  </Button>
+                                );
+                              })()
                             )}
                             <Button
                               variant="ghost"
