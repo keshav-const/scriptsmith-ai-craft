@@ -69,20 +69,37 @@ const Dashboard = () => {
       setIsAnalyzing(false);
     }
   };
-  const applyCodeFix = (newCode: string) => {
+  const applyCodeFix = (newCode: string, startLine?: number, endLine?: number) => {
     // Save current code to history before applying fix
     const newHistory = codeHistory.slice(0, historyIndex + 1);
     newHistory.push(code);
     setCodeHistory(newHistory);
     setHistoryIndex(newHistory.length);
+    let finalCode: string;
+    if (startLine !== undefined && endLine !== undefined) {
+      // Line-based replacement
+      const lines = code.split('\n');
+      const before = lines.slice(0, startLine - 1);
+      const after = lines.slice(endLine);
+      const newLines = newCode.split('\n');
 
+      finalCode = [...before, ...newLines, ...after].join('\n');
+
+      toast({
+        title: 'Fix applied!',
+        description: `Updated lines ${startLine}-${endLine}`,
+      });
+    } else {
+      // Full file replacement (fallback)
+      finalCode = newCode;
+
+      toast({
+        title: 'Code replaced!',
+        description: 'Full code has been updated',
+      });
+    }
     // Apply the new code
-    setCode(newCode);
-
-    toast({
-      title: 'Fix applied!',
-      description: 'Code has been updated successfully',
-    });
+    setCode(finalCode);
   };
   // Undo code change
   const undoCodeChange = () => {

@@ -152,6 +152,8 @@ Deno.serve(async (req: Request) => {
     {
       "title": "improvement title",
       "description": "detailed description of the improvement",
+      "startLine": 1,
+      "endLine": 5,
       "code": "suggested improved code snippet"
     }
   ]

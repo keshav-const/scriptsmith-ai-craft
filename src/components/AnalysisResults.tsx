@@ -39,6 +39,8 @@ interface AnalysisData {
   improvements?: Array<{
     title: string;
     description: string;
+    startLine?: number;
+    endLine?: number;
     code?: string;
   }>;
 }
@@ -54,8 +56,9 @@ interface AnalysisResultsProps {
     readabilityBonus: number;
     maintainabilityScore: number;
   };
-  onApplyFix?: (newCode: string) => void;  // ADD THIS
-  currentCode?: string;  // ADD THIS
+  onApplyFix?: (newCode: string, startLine?: number, endLine?: number) => void;
+
+  currentCode?: string;
 }
 
 const severityColors = {
@@ -231,10 +234,19 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
                                 variant="default"
                                 size="sm"
                                 className="absolute left-2 top-2 z-10 hover-lift bg-primary"
-                                onClick={() => onApplyFix(improvement.code || '')}
+                                onClick={() => onApplyFix(
+                                  improvement.code || '',
+                                  improvement.startLine,
+                                  improvement.endLine
+                                )}
                               >
                                 <CheckCircle2 className="h-4 w-4 mr-2" />
                                 Apply Fix
+                                {improvement.startLine && improvement.endLine && (
+                                  <span className="ml-1 text-xs opacity-75">
+                                    (L{improvement.startLine}-{improvement.endLine})
+                                  </span>
+                                )}
                               </Button>
                             )}
                             <Button
