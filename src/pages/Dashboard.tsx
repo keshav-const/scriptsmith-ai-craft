@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { CodeEditor } from '@/components/CodeEditor';
 import { AnalysisResults } from '@/components/AnalysisResults';
+import { CodeMentorChat } from '@/components/CodeMentorChat';
 import { HistoryList } from '@/components/HistoryList';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -252,15 +253,23 @@ const Dashboard = () => {
                 {/* Scrollable analysis results section */}
                 <div className="lg:min-h-screen">
                   {analysis && (
-                    <AnalysisResults
-                      analysis={analysis}
-                      language={language}
-                      qualityScore={qualityScore}
-                      scoreBreakdown={scoreBreakdown}
-                      onApplyFix={applyCodeFix}
-                      currentCode={code}
-                      appliedFixes={appliedFixes}
-                    />
+                    <>
+                      <AnalysisResults
+                        analysis={analysis}
+                        language={language}
+                        qualityScore={qualityScore}
+                        scoreBreakdown={scoreBreakdown}
+                        onApplyFix={applyCodeFix}
+                        currentCode={code}
+                        appliedFixes={appliedFixes}
+                      />
+                      <CodeMentorChat
+                        code={code}
+                        analysis={analysis}
+                        userId={user?.id || ''}
+                        analysisId={analysis.id}
+                      />
+                    </>
                   )}
                 </div>
               </motion.div>

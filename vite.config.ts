@@ -14,4 +14,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ['react-syntax-highlighter'],
+  },
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress warnings about unresolved dynamic imports from refractor
+        if (warning.code === 'UNRESOLVED_IMPORT' && warning.message.includes('refractor')) {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
 }));

@@ -3,8 +3,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExportButtons } from '@/components/ExportButtons';
-import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/default-highlight';
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RatingMeter } from './RatingMeter';
@@ -289,20 +287,11 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
-                            <SyntaxHighlighter
-                              language={language}
-                              style={atomOneDark}
-                              customStyle={{
-                                margin: 0,
-                                padding: '1rem',
-                                paddingTop: '2.5rem',
-                                fontSize: '0.875rem',
-                                background: 'hsl(var(--card))',
-                                borderRadius: '0 0 0.75rem 0.75rem',
-                              }}
-                            >
-                              {improvement.code}
-                            </SyntaxHighlighter>
+                            <pre className="m-0 overflow-x-auto rounded-b-xl bg-card p-4 pt-10 text-sm">
+                              <code className="font-mono text-foreground">
+                                {improvement.code}
+                              </code>
+                            </pre>
                           </div>
                         </CollapsibleContent>
                       </div>
