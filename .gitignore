@@ -26,3 +26,4 @@ dist-ssr
 
 # Test scripts with API keys
 test-*.ps1
+diagnose-api.ps1

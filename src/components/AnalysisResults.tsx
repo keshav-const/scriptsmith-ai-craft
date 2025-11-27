@@ -54,6 +54,8 @@ interface AnalysisResultsProps {
     readabilityBonus: number;
     maintainabilityScore: number;
   };
+  onApplyFix?: (newCode: string) => void;  // ADD THIS
+  currentCode?: string;  // ADD THIS
 }
 
 const severityColors = {
@@ -62,7 +64,7 @@ const severityColors = {
   low: 'secondary',
 } as const;
 
-export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown }: AnalysisResultsProps) => {
+export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown, onApplyFix, currentCode }: AnalysisResultsProps) => {
   const { toast } = useToast();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -224,6 +226,17 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="relative">
+                            {onApplyFix && improvement.code && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="absolute left-2 top-2 z-10 hover-lift bg-primary"
+                                onClick={() => onApplyFix(improvement.code || '')}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Apply Fix
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"

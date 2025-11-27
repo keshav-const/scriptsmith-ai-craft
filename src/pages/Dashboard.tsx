@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Undo2, Redo2 } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/hooks/useAuth';
 import { motion } from 'framer-motion';
@@ -19,6 +19,8 @@ const Dashboard = () => {
   const [qualityScore, setQualityScore] = useState<number | undefined>(undefined);
   const [scoreBreakdown, setScoreBreakdown] = useState<any>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [codeHistory, setCodeHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -67,7 +69,43 @@ const Dashboard = () => {
       setIsAnalyzing(false);
     }
   };
+  const applyCodeFix = (newCode: string) => {
+    // Save current code to history before applying fix
+    const newHistory = codeHistory.slice(0, historyIndex + 1);
+    newHistory.push(code);
+    setCodeHistory(newHistory);
+    setHistoryIndex(newHistory.length);
 
+    // Apply the new code
+    setCode(newCode);
+
+    toast({
+      title: 'Fix applied!',
+      description: 'Code has been updated successfully',
+    });
+  };
+  // Undo code change
+  const undoCodeChange = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setCode(codeHistory[historyIndex - 1]);
+      toast({
+        title: 'Undone',
+        description: 'Reverted to previous code',
+      });
+    }
+  };
+  // Redo code change
+  const redoCodeChange = () => {
+    if (historyIndex < codeHistory.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setCode(codeHistory[historyIndex + 1]);
+      toast({
+        title: 'Redone',
+        description: 'Restored code change',
+      });
+    }
+  };
   const handleSelectAnalysis = (selectedAnalysis: any, selectedCode: string, selectedLanguage: string) => {
     setAnalysis(selectedAnalysis);
     setCode(selectedCode);
@@ -105,7 +143,32 @@ const Dashboard = () => {
                     language={language}
                     onLanguageChange={setLanguage}
                   />
+                  {/* Undo/Redo buttons */}
+                  {codeHistory.length > 0 && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={undoCodeChange}
+                        disabled={historyIndex <= 0}
+                        className="flex-1"
+                      >
+                        <Undo2 className="h-4 w-4 mr-2" />
+                        Undo
+                      </Button>
 
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={redoCodeChange}
+                        disabled={historyIndex >= codeHistory.length - 1}
+                        className="flex-1"
+                      >
+                        <Redo2 className="h-4 w-4 mr-2" />
+                        Redo
+                      </Button>
+                    </div>
+                  )}
                   <Button
                     onClick={analyzeCode}
                     disabled={isAnalyzing || !code.trim()}
@@ -131,6 +194,8 @@ const Dashboard = () => {
                       language={language}
                       qualityScore={qualityScore}
                       scoreBreakdown={scoreBreakdown}
+                      onApplyFix={applyCodeFix}
+                      currentCode={code}
                     />
                   )}
                 </div>
