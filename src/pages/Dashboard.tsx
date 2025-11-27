@@ -16,6 +16,8 @@ const Dashboard = () => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('python');
   const [analysis, setAnalysis] = useState<any>(null);
+  const [qualityScore, setQualityScore] = useState<number | undefined>(undefined);
+  const [scoreBreakdown, setScoreBreakdown] = useState<any>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -48,6 +50,8 @@ const Dashboard = () => {
       if (error) throw error;
 
       setAnalysis(data.analysis);
+      setQualityScore(data.qualityScore);
+      setScoreBreakdown(data.scoreBreakdown);
       toast({
         title: 'Analysis complete',
         description: 'Your code has been analyzed successfully',
@@ -121,7 +125,14 @@ const Dashboard = () => {
 
                 {/* Scrollable analysis results section */}
                 <div className="lg:min-h-screen">
-                  {analysis && <AnalysisResults analysis={analysis} language={language} />}
+                  {analysis && (
+                    <AnalysisResults
+                      analysis={analysis}
+                      language={language}
+                      qualityScore={qualityScore}
+                      scoreBreakdown={scoreBreakdown}
+                    />
+                  )}
                 </div>
               </motion.div>
             </TabsContent>

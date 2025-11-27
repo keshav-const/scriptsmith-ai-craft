@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } fr
 import { useToast } from '@/hooks/use-toast';
 import { RatingMeter } from './RatingMeter';
 import { DocstringGenerator } from './DocstringGenerator';
+import { QualityScoreBadge } from './QualityScoreBadge';
 import { motion } from 'framer-motion';
 import {
   Collapsible,
@@ -45,6 +46,14 @@ interface AnalysisData {
 interface AnalysisResultsProps {
   analysis: AnalysisData;
   language: string;
+  qualityScore?: number;
+  scoreBreakdown?: {
+    baseScore: number;
+    issuesPenalty: number;
+    complexityPenalty: number;
+    readabilityBonus: number;
+    maintainabilityScore: number;
+  };
 }
 
 const severityColors = {
@@ -53,7 +62,7 @@ const severityColors = {
   low: 'secondary',
 } as const;
 
-export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) => {
+export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown }: AnalysisResultsProps) => {
   const { toast } = useToast();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -70,7 +79,7 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -79,12 +88,23 @@ export const AnalysisResults = ({ analysis, language }: AnalysisResultsProps) =>
       {/* Export Buttons */}
       <Card className="p-6 glass border-border/50 shadow-lg">
         <h3 className="mb-3 text-lg font-semibold text-foreground">Export Options</h3>
-        <ExportButtons 
-          analysis={analysis} 
-          docstring={analysis.docstring} 
-          language={language} 
+        <ExportButtons
+          analysis={analysis}
+          docstring={analysis.docstring}
+          language={language}
         />
       </Card>
+
+      {/* Quality Score Badge */}
+      {qualityScore !== undefined && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <QualityScoreBadge score={qualityScore} breakdown={scoreBreakdown} />
+        </motion.div>
+      )}
 
       {/* Overall Explanation */}
       <motion.div

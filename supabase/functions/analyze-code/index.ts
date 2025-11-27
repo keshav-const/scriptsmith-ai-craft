@@ -38,6 +38,62 @@ async function discoverGeminiModel(apiKey: string): Promise<string> {
   return cachedModelUrl;
 }
 
+function calculateQualityScore(analysis: any): { score: number; breakdown: any } {
+  let score = 100;
+  const breakdown = {
+    baseScore: 100,
+    issuesPenalty: 0,
+    complexityPenalty: 0,
+    readabilityBonus: 0,
+    maintainabilityScore: 0,
+  };
+
+  // Deduct points for issues
+  if (analysis.issues && Array.isArray(analysis.issues)) {
+    analysis.issues.forEach((issue: any) => {
+      if (issue.severity === 'high') {
+        score -= 10;
+        breakdown.issuesPenalty += 10;
+      } else if (issue.severity === 'medium') {
+        score -= 5;
+        breakdown.issuesPenalty += 5;
+      } else if (issue.severity === 'low') {
+        score -= 2;
+        breakdown.issuesPenalty += 2;
+      }
+    });
+  }
+
+  // Complexity penalty
+  if (analysis.rating?.complexity) {
+    const complexityMap: any = { low: 0, medium: 5, high: 15 };
+    const penalty = complexityMap[analysis.rating.complexity] || 5;
+    score -= penalty;
+    breakdown.complexityPenalty = penalty;
+  }
+
+  // Readability bonus/penalty
+  if (analysis.rating?.readability === 'high') {
+    score += 10;
+    breakdown.readabilityBonus = 10;
+  } else if (analysis.rating?.readability === 'low') {
+    score -= 10;
+    breakdown.readabilityBonus = -10;
+  }
+
+  // Maintainability contribution
+  if (analysis.rating?.maintainability) {
+    const maintScore = analysis.rating.maintainability * 2;
+    score += maintScore;
+    breakdown.maintainabilityScore = maintScore;
+  }
+
+  // Ensure score is between 0 and 100
+  const finalScore = Math.max(0, Math.min(100, Math.round(score)));
+
+  return { score: finalScore, breakdown };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -164,6 +220,10 @@ IMPORTANT: Return ONLY valid JSON, no markdown formatting, no code blocks.`;
       };
     }
 
+    // Calculate quality score
+    const qualityScore = calculateQualityScore(analysis);
+    console.log(`📊 Quality Score: ${qualityScore.score}/100`);
+
     // Store in database
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -185,6 +245,8 @@ IMPORTANT: Return ONLY valid JSON, no markdown formatting, no code blocks.`;
       JSON.stringify({
         id: 'analysis-' + Date.now(),
         analysis,
+        qualityScore: qualityScore.score,
+        scoreBreakdown: qualityScore.breakdown,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
