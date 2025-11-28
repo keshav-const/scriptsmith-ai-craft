@@ -229,30 +229,34 @@ IMPORTANT: Return ONLY valid JSON, no markdown formatting, no code blocks.`;
     // Store in database
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
+    let analysisId = 'analysis-' + Date.now(); // Fallback ID
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
-
-      await supabase.from('code_analyses').insert({
-        code_text: code,
-        language: language || 'unknown',
-        user_id: userId,
-        ai_explanation: analysis,
-        ai_docstring: analysis.docstring || null,
-        ai_rating: analysis.rating || null,
-      });
+      const { data: insertedData, error: insertError } = await supabase
+        .from('code_analyses')
+        .insert({
+          code_text: code,
+          language: language || 'unknown',
+          user_id: userId,
+          ai_explanation: analysis,
+          ai_docstring: analysis.docstring || null,
+          ai_rating: analysis.rating || null,
+        })
+        .select('id')
+        .single();
+      if (!insertError && insertedData) {
+        analysisId = insertedData.id;
+      }
     }
-
     return new Response(
       JSON.stringify({
-        id: 'analysis-' + Date.now(),
+        id: analysisId,
         analysis,
         qualityScore: qualityScore.score,
         scoreBreakdown: qualityScore.breakdown,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('Error in analyze-code function:', error);
 

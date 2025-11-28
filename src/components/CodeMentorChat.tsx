@@ -27,10 +27,46 @@ export const CodeMentorChat = ({ code, analysis, userId, analysisId }: CodeMento
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
 
-    // Auto-scroll to bottom
+    // Load chat history from database when component mounts
+    useEffect(() => {
+        const loadChatHistory = async () => {
+            if (!analysisId) return;
+
+            setIsLoadingHistory(true);
+            try {
+                const { data, error } = await supabase
+                    .from('code_chats')
+                    .select('messages')
+                    .eq('analysis_id', analysisId)
+                    .eq('user_id', userId)
+                    .single();
+
+                if (error) {
+                    // No existing chat found, that's okay
+                    if (error.code !== 'PGRST116') {
+                        console.error('Error loading chat history:', error);
+                    }
+                    return;
+                }
+
+                if (data?.messages && Array.isArray(data.messages)) {
+                    setMessages(data.messages);
+                }
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        loadChatHistory();
+    }, [analysisId, userId]);
+
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -81,9 +117,31 @@ export const CodeMentorChat = ({ code, analysis, userId, analysisId }: CodeMento
         }
     };
 
-    const clearChat = () => {
-        setMessages([]);
-        toast({ title: 'Chat cleared' });
+    const clearChat = async () => {
+        if (!analysisId) {
+            setMessages([]);
+            toast({ title: 'Chat cleared' });
+            return;
+        }
+
+        try {
+            // Delete from database
+            await supabase
+                .from('code_chats')
+                .delete()
+                .eq('analysis_id', analysisId)
+                .eq('user_id', userId);
+
+            setMessages([]);
+            toast({ title: 'Chat cleared' });
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to clear chat',
+                variant: 'destructive'
+            });
+        }
     };
 
     return (
@@ -99,14 +157,21 @@ export const CodeMentorChat = ({ code, analysis, userId, analysisId }: CodeMento
 
             {/* Messages */}
             <div className="h-96 overflow-y-auto mb-4 space-y-4">
-                {messages.length === 0 && (
+                {isLoadingHistory && (
+                    <div className="text-center text-muted-foreground py-12">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                        <p>Loading chat history...</p>
+                    </div>
+                )}
+
+                {!isLoadingHistory && messages.length === 0 && (
                     <div className="text-center text-muted-foreground py-12">
                         <p>Ask me anything about your code!</p>
                         <p className="text-sm mt-2">Try: "What does this function do?" or "How can I improve this?"</p>
                     </div>
                 )}
 
-                {messages.map((msg, idx) => (
+                {!isLoadingHistory && messages.map((msg, idx) => (
                     <div
                         key={idx}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -145,9 +210,9 @@ export const CodeMentorChat = ({ code, analysis, userId, analysisId }: CodeMento
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Ask a question about your code..."
-                    disabled={isLoading}
+                    disabled={isLoading || isLoadingHistory}
                 />
-                <Button onClick={sendMessage} disabled={isLoading || !input.trim()}>
+                <Button onClick={sendMessage} disabled={isLoading || !input.trim() || isLoadingHistory}>
                     {isLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
