@@ -32,10 +32,10 @@ export const CodeEditor = ({ value, onChange, language, onLanguageChange }: Code
         <select
           value={language}
           onChange={(e) => onLanguageChange(e.target.value)}
-          className="rounded-lg border border-border/50 glass px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300"
+          className="rounded-lg border border-border/50 glass px-3 py-1.5 text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300"
         >
           {LANGUAGES.map((lang) => (
-            <option key={lang} value={lang}>
+            <option key={lang} value={lang} className="bg-background text-foreground">
               {lang.charAt(0).toUpperCase() + lang.slice(1)}
             </option>
           ))}

@@ -26,6 +26,7 @@ const Dashboard = () => {
 
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [appliedFixes, setAppliedFixes] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('analyze');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -177,6 +178,7 @@ const Dashboard = () => {
     setAnalysisId(selectedAnalysisId);
     setCode(selectedCode);
     setLanguage(selectedLanguage);
+    setActiveTab('analyze');
   };
 
   return (
@@ -185,7 +187,7 @@ const Dashboard = () => {
         <Header />
 
         <main className="container mx-auto px-4 py-8">
-          <Tabs defaultValue="analyze" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8 glass border-border/50">
               <TabsTrigger value="analyze" className="data-[state=active]:bg-primary/20">
                 Analyze Code
