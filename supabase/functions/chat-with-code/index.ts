@@ -44,6 +44,7 @@ Deno.serve(async (req: Request) => {
     }
     try {
         const { question, code, analysis, chatHistory, userId, analysisId } = await req.json();
+        console.log('🔍 Received request - analysisId:', analysisId, 'userId:', userId); // ADD THIS LINE
         if (!question || !userId) {
             return new Response(
                 JSON.stringify({ error: 'Question and userId required' }),
@@ -111,12 +112,19 @@ Answer the user's question based on this context. Be helpful, clear, and provide
             };
             const updatedMessages = [...(chatHistory || []), newMessage, aiMessage];
             // Upsert chat
-            await supabase.from('code_chats').upsert({
+            console.log('💾 Saving chat - analysisId:', analysisId, 'userId:', userId);
+            const { data, error } = await supabase.from('code_chats').upsert({
                 analysis_id: analysisId,
                 user_id: userId,
                 messages: updatedMessages,
                 updated_at: new Date().toISOString()
             });
+
+            if (error) {
+                console.error('❌ Database error:', error);
+            } else {
+                console.log('✅ Chat saved successfully');
+            }
         }
         return new Response(
             JSON.stringify({ answer }),

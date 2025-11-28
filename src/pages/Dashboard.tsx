@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('python');
   const [analysis, setAnalysis] = useState<any>(null);
+  const [analysisId, setAnalysisId] = useState<string | undefined>(undefined);
   const [qualityScore, setQualityScore] = useState<number | undefined>(undefined);
   const [scoreBreakdown, setScoreBreakdown] = useState<any>(undefined);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -56,6 +57,7 @@ const Dashboard = () => {
       if (error) throw error;
 
       setAnalysis(data.analysis);
+      setAnalysisId(data.id); // Store the analysis ID
       setQualityScore(data.qualityScore);
       setScoreBreakdown(data.scoreBreakdown);
       toast({
@@ -267,7 +269,7 @@ const Dashboard = () => {
                         code={code}
                         analysis={analysis}
                         userId={user?.id || ''}
-                        analysisId={analysis.id}
+                        analysisId={analysisId}
                       />
                     </>
                   )}
