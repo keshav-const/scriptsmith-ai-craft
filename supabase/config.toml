@@ -3,6 +3,8 @@ project_id = "ezsnodpgxdtbcxftidva"
 [api]
 enabled = true
 port = 54321
+# Allow localhost origins for CORS
+extra_search_path = "public, extensions"
 
 [db]
 port = 54322
@@ -11,6 +13,9 @@ major_version = 17
 [auth]
 enabled = true
 enable_signup = true
+# Allow localhost for development
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:8080"]
 
 [auth.email]
 enable_signup = true
@@ -26,4 +31,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fix-code]
+verify_jwt = false
+
+[functions.chat-with-code]
 verify_jwt = false

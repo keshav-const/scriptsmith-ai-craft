@@ -1,8 +1,43 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+let cachedModelUrl: string | null = null;
+
+async function discoverGeminiModel(apiKey: string): Promise<string> {
+    if (cachedModelUrl) {
+        return cachedModelUrl;
+    }
+
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to list models: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const availableModels = data.models.filter((model: any) =>
+        model.supportedGenerationMethods?.includes('generateContent')
+    );
+
+    const selectedModel = availableModels.find((m: any) =>
+        m.name.includes('flash')
+    ) || availableModels[0];
+
+    cachedModelUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent`;
+
+    console.log(`✅ Using model: ${selectedModel.displayName || selectedModel.name}`);
+
+    return cachedModelUrl;
+}
+
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -19,6 +54,10 @@ Deno.serve(async (req: Request) => {
         if (!GEMINI_API_KEY) {
             throw new Error('GEMINI_API_KEY not configured');
         }
+
+        // Discover available Gemini model
+        const modelUrl = await discoverGeminiModel(GEMINI_API_KEY);
+
         // Build context-aware prompt
         const systemPrompt = `You are an expert code mentor. Help users understand their code by answering questions clearly and concisely.
 Context:
@@ -36,9 +75,9 @@ Answer the user's question based on this context. Be helpful, clear, and provide
             })),
             { role: 'user', parts: [{ text: question }] }
         ];
-        // Call Gemini
+        // Call Gemini with discovered model
         const aiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+            `${modelUrl}?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -46,7 +85,9 @@ Answer the user's question based on this context. Be helpful, clear, and provide
             }
         );
         if (!aiResponse.ok) {
-            throw new Error(`Gemini API error: ${aiResponse.status}`);
+            const errorText = await aiResponse.text();
+            console.error('Gemini API error:', aiResponse.status, errorText);
+            throw new Error(`Gemini API error: ${aiResponse.status} - ${errorText}`);
         }
         const aiData = await aiResponse.json();
         const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
