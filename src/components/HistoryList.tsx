@@ -17,7 +17,7 @@ interface HistoryItem {
 }
 
 interface HistoryListProps {
-  onSelectAnalysis: (analysis: any, code: string, language: string) => void;
+  onSelectAnalysis: (analysis: any, code: string, language: string, analysisId: string) => void;
 }
 
 export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
@@ -34,7 +34,7 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
 
   const loadHistory = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('code_analyses')
@@ -89,7 +89,7 @@ export const HistoryList = ({ onSelectAnalysis }: HistoryListProps) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
-            onClick={() => onSelectAnalysis(item.ai_explanation, item.code_text, item.language)}
+            onClick={() => onSelectAnalysis(item.ai_explanation, item.code_text, item.language, item.id)}
             className="w-full rounded-xl border border-border/50 glass p-4 text-left transition-all duration-300 hover:bg-primary/5 hover-lift"
           >
             <div className="mb-2 flex items-center justify-between">

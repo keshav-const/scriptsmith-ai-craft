@@ -172,8 +172,9 @@ const Dashboard = () => {
       });
     }
   };
-  const handleSelectAnalysis = (selectedAnalysis: any, selectedCode: string, selectedLanguage: string) => {
+  const handleSelectAnalysis = (selectedAnalysis: any, selectedCode: string, selectedLanguage: string, selectedAnalysisId: string) => {
     setAnalysis(selectedAnalysis);
+    setAnalysisId(selectedAnalysisId);
     setCode(selectedCode);
     setLanguage(selectedLanguage);
   };
