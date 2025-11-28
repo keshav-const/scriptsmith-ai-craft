@@ -19,9 +19,7 @@ export const Header = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-xs text-muted-foreground hidden md:block">
-            Powered by Gemini 2.5 Pro
-          </div>
+
           <ThemeToggle />
           {user && (
             <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 hover-lift">
