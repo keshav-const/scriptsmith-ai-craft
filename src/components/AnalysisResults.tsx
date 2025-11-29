@@ -15,6 +15,25 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
+// Utility function to unescape JSON strings
+const unescapeText = (text: string): string => {
+  if (!text) return '';
+  try {
+    // If the text looks like an escaped JSON string, unescape it
+    if (text.includes('\\n') || text.includes('\\t') || text.includes('\\"')) {
+      return text
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\');
+    }
+    return text;
+  } catch {
+    return text;
+  }
+};
+
+
 interface AnalysisData {
   explanation: string;
   docstring?: string;
@@ -134,7 +153,7 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
             <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-success" />
             <div className="flex-1">
               <h3 className="mb-2 text-lg font-semibold text-foreground">Code Overview</h3>
-              <p className="text-muted-foreground leading-relaxed">{analysis.explanation}</p>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{unescapeText(analysis.explanation)}</p>
             </div>
           </div>
         </Card>
