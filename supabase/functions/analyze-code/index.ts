@@ -349,10 +349,35 @@ Deno.serve(async (req: Request) => {
     // Parse the JSON response
     let analysis;
     try {
-      // Remove markdown code blocks if present
-      const jsonMatch = aiContent.match(/```json\n?([\s\S]*?)\n?```/) || aiContent.match(/```\n?([\s\S]*?)\n?```/);
-      const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
-      analysis = JSON.parse(jsonString.trim());
+      // Multiple strategies to extract JSON from markdown code blocks
+      let jsonString = aiContent;
+
+      // Strategy 1: Try to match ```json ... ``` (with or without closing)
+      const jsonCodeBlockMatch = aiContent.match(/```json\s*\n?([\s\S]*?)(?:\n?```|$)/);
+      if (jsonCodeBlockMatch) {
+        jsonString = jsonCodeBlockMatch[1];
+      } else {
+        // Strategy 2: Try to match generic ``` ... ```
+        const genericCodeBlockMatch = aiContent.match(/```\s*\n?([\s\S]*?)(?:\n?```|$)/);
+        if (genericCodeBlockMatch) {
+          jsonString = genericCodeBlockMatch[1];
+        } else {
+          // Strategy 3: Try to find JSON object directly (starts with { ends with })
+          const jsonObjectMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (jsonObjectMatch) {
+            jsonString = jsonObjectMatch[0];
+          }
+        }
+      }
+
+      // Clean up the string before parsing
+      jsonString = jsonString
+        .trim()
+        .replace(/^```json\s*\n?/i, '')  // Remove leading ```json
+        .replace(/^```\s*\n?/, '')        // Remove leading ```
+        .replace(/\n?```\s*$/, '');       // Remove trailing ```
+
+      analysis = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
       console.error('Raw response:', aiContent.substring(0, 500));
