@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExportButtons } from '@/components/ExportButtons';
-import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, Copy, FileWarning, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RatingMeter } from './RatingMeter';
 import { DocstringGenerator } from './DocstringGenerator';
@@ -47,6 +47,23 @@ interface AnalysisData {
     content: string;
     explanation: string;
   }>;
+  // Large file support: section-based analysis instead of line-by-line
+  sections?: Array<{
+    name: string;
+    startLine: number;
+    endLine: number;
+    purpose: string;
+    keyPoints?: string[];
+  }>;
+  // Large file summary
+  summary?: {
+    totalFunctions?: number;
+    totalClasses?: number;
+    linesOfCode?: number;
+    keyPatterns?: string[];
+    mainDependencies?: string[];
+    architectureNotes?: string;
+  };
   issues?: Array<{
     severity: 'high' | 'medium' | 'low';
     line?: number;
@@ -91,6 +108,8 @@ interface AnalysisResultsProps {
   onApplyFix?: (newCode: string, startLine?: number, endLine?: number, fixId?: string) => void;
   currentCode?: string;
   appliedFixes?: Set<string>;
+  isLargeFile?: boolean;
+  lineCount?: number;
 }
 const severityColors = {
   high: 'destructive',
@@ -98,7 +117,7 @@ const severityColors = {
   low: 'secondary',
 } as const;
 
-export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown, onApplyFix, currentCode, appliedFixes = new Set() }: AnalysisResultsProps) => {
+export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdown, onApplyFix, currentCode, appliedFixes = new Set(), isLargeFile = false, lineCount = 0 }: AnalysisResultsProps) => {
   const { toast } = useToast();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -121,6 +140,26 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* Large File Warning Banner */}
+      {isLargeFile && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="p-4 glass border-amber-500/50 bg-amber-500/10 shadow-lg">
+            <div className="flex items-center gap-3">
+              <FileWarning className="h-5 w-5 text-amber-500" />
+              <div>
+                <h4 className="font-medium text-amber-600 dark:text-amber-400">Large File Analysis</h4>
+                <p className="text-sm text-muted-foreground">
+                  This file has {lineCount.toLocaleString()} lines. Analysis uses section-based summarization instead of line-by-line for better performance.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
       {/* Export Buttons */}
       <Card className="p-6 glass border-border/50 shadow-lg">
         <h3 className="mb-3 text-lg font-semibold text-foreground">Export Options</h3>
@@ -162,8 +201,125 @@ export const AnalysisResults = ({ analysis, language, qualityScore, scoreBreakdo
       {/* Quality Metrics */}
       {analysis.rating && <RatingMeter rating={analysis.rating} />}
 
+      {/* Code Summary (for large files) */}
+      {analysis.summary && (
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+        >
+          <Card className="p-6 glass border-border/50 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Layers className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Code Statistics</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg glass-strong">
+                <div className="text-2xl font-bold text-primary">{analysis.summary.linesOfCode?.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Lines of Code</div>
+              </div>
+              {analysis.summary.totalFunctions !== undefined && (
+                <div className="text-center p-3 rounded-lg glass-strong">
+                  <div className="text-2xl font-bold text-primary">{analysis.summary.totalFunctions}</div>
+                  <div className="text-xs text-muted-foreground">Functions</div>
+                </div>
+              )}
+              {analysis.summary.totalClasses !== undefined && (
+                <div className="text-center p-3 rounded-lg glass-strong">
+                  <div className="text-2xl font-bold text-primary">{analysis.summary.totalClasses}</div>
+                  <div className="text-xs text-muted-foreground">Classes</div>
+                </div>
+              )}
+              {analysis.issues && (
+                <div className="text-center p-3 rounded-lg glass-strong">
+                  <div className="text-2xl font-bold text-destructive">{analysis.issues.length}</div>
+                  <div className="text-xs text-muted-foreground">Issues Found</div>
+                </div>
+              )}
+            </div>
+            {analysis.summary.keyPatterns && analysis.summary.keyPatterns.length > 0 && (
+              <div className="mb-3">
+                <span className="text-sm font-medium text-foreground">Key Patterns: </span>
+                <span className="text-sm text-muted-foreground">{analysis.summary.keyPatterns.join(', ')}</span>
+              </div>
+            )}
+            {analysis.summary.mainDependencies && analysis.summary.mainDependencies.length > 0 && (
+              <div className="mb-3">
+                <span className="text-sm font-medium text-foreground">Dependencies: </span>
+                <span className="text-sm text-muted-foreground">{analysis.summary.mainDependencies.join(', ')}</span>
+              </div>
+            )}
+            {analysis.summary.architectureNotes && (
+              <div>
+                <span className="text-sm font-medium text-foreground">Architecture Notes: </span>
+                <span className="text-sm text-muted-foreground">{analysis.summary.architectureNotes}</span>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      )}
+
       {/* Generated Docstrings */}
       {analysis.docstring && <DocstringGenerator docstring={analysis.docstring} />}
+
+      {/* Sections Analysis (for large files) */}
+      {analysis.sections && analysis.sections.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Card className="p-6 glass border-border/50 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Layers className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Code Sections</h3>
+              <Badge variant="secondary" className="ml-2">{analysis.sections.length} sections</Badge>
+            </div>
+            <div className="space-y-4">
+              {analysis.sections.map((section, idx) => (
+                <Collapsible
+                  key={idx}
+                  open={openSections[`section-${idx}`]}
+                  onOpenChange={() => toggleSection(`section-${idx}`)}
+                >
+                  <div className="rounded-xl glass-strong overflow-hidden">
+                    <CollapsibleTrigger asChild>
+                      <button className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-primary/5 transition-all duration-300">
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold">{section.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Lines {section.startLine}-{section.endLine}
+                          </span>
+                        </div>
+                        {openSections[`section-${idx}`] ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="px-4 pb-4 pt-2">
+                        <p className="text-sm text-muted-foreground mb-3">{section.purpose}</p>
+                        {section.keyPoints && section.keyPoints.length > 0 && (
+                          <div>
+                            <span className="text-xs font-medium text-foreground">Key Points:</span>
+                            <ul className="list-disc list-inside text-sm text-muted-foreground mt-1">
+                              {section.keyPoints.map((point, pidx) => (
+                                <li key={pidx}>{point}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Line by Line Analysis */}
       {analysis.lineByLine && analysis.lineByLine.length > 0 && (

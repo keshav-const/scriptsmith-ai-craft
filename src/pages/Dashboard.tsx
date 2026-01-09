@@ -20,6 +20,8 @@ const Dashboard = () => {
   const [analysisId, setAnalysisId] = useState<string | undefined>(undefined);
   const [qualityScore, setQualityScore] = useState<number | undefined>(undefined);
   const [scoreBreakdown, setScoreBreakdown] = useState<any>(undefined);
+  const [isLargeFile, setIsLargeFile] = useState<boolean>(false);
+  const [lineCount, setLineCount] = useState<number>(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [codeHistory, setCodeHistory] = useState<string[]>([]);
   const [currentCode, setCurrentCode] = useState<string | undefined>(undefined);
@@ -61,9 +63,13 @@ const Dashboard = () => {
       setAnalysisId(data.id); // Store the analysis ID
       setQualityScore(data.qualityScore);
       setScoreBreakdown(data.scoreBreakdown);
+      setIsLargeFile(data.isLargeFile || false);
+      setLineCount(data.lineCount || 0);
       toast({
         title: 'Analysis complete',
-        description: 'Your code has been analyzed successfully',
+        description: data.isLargeFile
+          ? `Large file (${data.lineCount?.toLocaleString()} lines) analyzed with section-based summary`
+          : 'Your code has been analyzed successfully',
       });
     } catch (error) {
       console.error('Error analyzing code:', error);
@@ -267,6 +273,8 @@ const Dashboard = () => {
                         onApplyFix={applyCodeFix}
                         currentCode={code}
                         appliedFixes={appliedFixes}
+                        isLargeFile={isLargeFile}
+                        lineCount={lineCount}
                       />
                       <CodeMentorChat
                         code={code}
